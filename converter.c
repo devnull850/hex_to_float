@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     scanf("%lx", &n);
 
     if (argc > 1 && is_single_precision_mode(argv[1])) {
-        mode = SINGLE_PRECISION_MODE;
+        mode = SINGLE_PRECISION_MODE; // 32 bit (single precision)
     }
 
     printf("0x%lx == %lf\n", n,
@@ -59,7 +59,8 @@ double convert_hex_bits_to_double(uint64_t n, struct ieee_754_bits bits) {
     double result, base, divisor;
     int exp, p;
 
-    // bits 0-51 (52 bits) -> fraction
+    // 64 bit/double precision: bits 0-51 (52 bits) -> fraction
+    // 32 bit/single precision: bits 0-22 (23 bits) -> fraction
     base = 1.0f;
     divisor = 0.5f; // 2 ^ -1 = 0.5
 
@@ -68,13 +69,16 @@ double convert_hex_bits_to_double(uint64_t n, struct ieee_754_bits bits) {
         divisor /= 2.0f;
     }
 
-    // bits 52-62 (11 bits) -> exponent
+    // 64 bit/double precision: bits 52-62 (11 bits) -> exponent
+    // 32 bit/single precision: bits 23-30 ( 8 bits) -> exponent
     p = 0;
 
     for (int i = bits.exponent_lsb, e = 1; i < bits.exponent_msb + 1; ++i, e *= 2) {
         if ((n >> i) & 1) { p += e; }
     }
 
+    // 64 bit/double precision: bias -1023
+    // 32 bit/single precision: bias -127
     p -= bits.bias;
     exp = 1;
 
@@ -86,7 +90,8 @@ double convert_hex_bits_to_double(uint64_t n, struct ieee_754_bits bits) {
         exp >>= p;
     }
 
-    // bit 63 -> sign bit
+    // 64 bit/double precision: bit 63 -> sign bit
+    // 32 bit/single precision: bit 31 -> sign bit
     result = base * exp;
     if ((n >> bits.sign_bit) & 1) { result *= -1; }
 
